@@ -1,0 +1,136 @@
+---
+title: "M_descenso_gradiente"
+author: "Paulina Gomez Mont W"
+date: "5/1/2019"
+output: html_document
+---
+```{r}
+library(nnet)
+library(tidyverse)
+```
+
+
+```{r}
+datos <- read_csv("./train-2.csv")
+#datos_tbl <- spark_read_csv(sc,"datos" ,path="/Users/paugmw/Dropbox/Documentos windows/Documentos/ITAM/2_Semestre/Metodos num y optimizacion/Proyecto_final/train-2.csv",header=TRUE)
+```
+
+```{r}
+pred_ml <- function(x, beta){
+  p <- ncol(x)
+  K <- length(beta)/(p+1) + 1
+  beta_mat <- matrix(beta, K - 1, p + 1 , byrow = TRUE)
+  u_beta <- exp(as.matrix(cbind(1, x)) %*% t(beta_mat))
+  Z <- 1 + apply(u_beta, 1, sum)
+  p_beta <- cbind(u_beta, 1)/Z
+  as.matrix(p_beta)
+}
+
+devianza_calc <- function(x, y){
+  dev_fun <- function(beta){
+    p_beta <- pred_ml(x, beta)
+    p <- sapply(1:nrow(x), function(i) p_beta[i, y[i]+1])
+   -2*sum(log(p))
+  }
+  dev_fun
+}
+
+grad_calc <- function(x_ent, y_ent){
+  p <- ncol(x_ent)
+  K <- length(unique(y_ent)) 
+  y_fact <- factor(y_ent) 
+  # matriz de indicadoras de clase
+  y_dummy <-  model.matrix(~-1 + y_fact)
+  print(y_dummy)
+  salida_grad <- function(beta){
+    p_beta <-  pred_ml(x_ent, beta)
+    e_mat <-  (y_dummy  - p_beta)[, -K]
+    grad_out <- -2*(t(cbind(1,x_ent)) %*% e_mat)
+    as.numeric(grad_out)
+  }
+  salida_grad
+}
+descenso <- function(n, z_0, eta, h_deriv, dev_fun){
+  z <- matrix(0,n, length(z_0))
+  z[1, ] <- z_0
+  for(i in 1:(n-1)){
+    z[i+1, ] <- z[i, ] - eta * h_deriv(z[i, ])
+    if(i %% 10 == 0){
+      print(paste0(i, ' Devianza: ', dev_fun(z[i+1, ])))
+    }
+  }
+  z
+}
+```
+
+```{r}
+set.seed(530)
+ent <- sample_frac(datos,0.5) %>% data.frame()
+prueba <- anti_join(datos,ent)
+
+```
+
+```{r}
+# spark_disconnect_all()
+# library(sparklyr)
+# sc <- spark_connect(master = "local",spark_home = "/Users/paugmw/spark/spark-2.4.0-bin-hadoop2.7")
+```
+```{r}
+#ent_tbl <- copy_to(sc, ent)
+```
+
+
+```{r}
+#ent_1 <- ent %>% head(100000)
+
+```
+
+```{r}
+x_ent <- ent %>% select(-c(experiment,event)) %>% as.matrix
+y_ent <- ent %>% select(c(event)) 
+
+x_ent_s <- x_ent %>% scale()
+y_ent$event[y_ent$event == "A"] <- 0
+y_ent$event[y_ent$event == "B"] <- 1
+y_ent$event[y_ent$event == "C"] <- 2
+y_ent$event[y_ent$event == "D"] <- 3
+y_ent <- unlist(y_ent) %>% as.numeric()
+
+beta <- rep(0, ncol(x_ent)*3)
+dev_ent <- devianza_calc(x_ent_s, y_ent)
+grad <- grad_calc(x_ent_s, y_ent)
+
+
+```
+
+```{r}
+z <- descenso(2000, rep(-0.05, (ncol(x_ent_s)+1)*3), eta=0.0000005, 
+                        h_deriv = grad, dev_fun = dev_ent)
+```
+```{r}
+beta <- z[300,]
+dev_ent(beta)
+z_1 <- descenso(300, c(-2,rep(0, (ncol(x_ent_s)+1)*3-1)), eta=0.0000005, 
+                        h_deriv = grad, dev_fun = dev_ent)
+
+```
+
+
+
+
+```{r}
+
+mod_mult <- multinom(y_ent ~ x_ent_s, data = ent, MaxNWt=100000, maxit = 0)
+mod_mult
+```
+
+
+```{r}
+dev_ent(coef(mod_mult))
+```
+
+
+```{r}
+grad(coef(mod_mult)) %>% norm(type = '2')
+```
+
