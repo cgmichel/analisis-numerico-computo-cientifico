@@ -129,12 +129,4 @@ mod_mult
 ```
 
 
-```{r}
-dev_ent(coef(mod_mult))
-```
-
-
-```{r}
-grad(coef(mod_mult)) %>% norm(type = '2')
-```
 

@@ -331,11 +331,12 @@ Residual Deviance: 4447412
 AIC: 4447574
 ```
 
-Podemos observar que la devianza con este modelo es mayor. Esto implica que el resultado del **método de máximo descenso** tiene un mejor desempeño que el que utiliza **`nnet`**. A pesar de ello, pueden existir factores que hayn contribuido a por lo que es necesario que desmenucemos algunos:
+
+Podemos observar que la devianza residual con este modelo es igual a la encontrada por el método de descenso en gradiente programado. Esto implica que el resultado del **método de máximo descenso** tiene el mismo desempeño que el que utiliza **`nnet`**. El tiempo de ejecución del modelo programado es de casi un día, por lo que es menos óptimo en términos computacionales. Algunos factores que pudieron haber contribuido al mayor tiempo de convergencia son:
 \begin{enumerate}
-\item El punto inicial en el que comenzamos puede estar más cercano al óptimo global.
-\item La tasa de convergencia puede ser muy lenta debido a que el segundo modelo sí busca tener procesos de actualización automatizados.
-\item La complejidad es mayor en el segundo proceso, debido a la simplicidad asociada al primer método.
+\item El punto inicial en el que comenzó el método programado es puede no ser la selección óptima inicial..
+\item La tasa de convergencia es muy lenta debido a que se estableció una $eta$ fija para todas las iteraciones. El  modelo de \texttt{nnet} tiene una tasa de actualización que considera las características de la iteración.
+\item El uso de un \texttt{for} es muy tardado en \texttt{R}, mientras que el método de \texttt{nnet} tiene un mapeo sobre las operaciones a realizar.
 \end{enumerate}
 
-Como mencionamos previamente, extensiones como la búsqueda de acttualización óptima para $\eta$ son elementos que se deben agregar, así como un análisis de convergencia más riguroso. Por otro lado, sabemos que en la práctica, el hacer un paro prematuro en modelos logísticos es recomendable a realizar todas las iteraciones. Por ello, hace falta hacer un comparativo utilizando los datos que no fueron seleccionados en la muestra de entrenamiento.
+Como mencionamos previamente, extensiones como la búsqueda de actualización óptima para el parámetro $\eta$ son elementos que se deben agregar, así como un análisis de convergencia más riguroso, así como encontrar una forma de optimizar el cálculo sin utilizar un ciclado. Por otro lado, sabemos que en la práctica, el hacer un paro prematuro en modelos logísticos es recomendable a realizar todas las iteraciones, para mejorar la predictibilidad del algoritmo. Dependiendo del propósito del problema, se puede mejorar el problema. Si el propósito es predicción, una herramienta útil pudo haber sido utilizar validación cruzada.
