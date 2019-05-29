@@ -1,6 +1,10 @@
 ---
 title: "M_descenso_gradiente"
-author: "Paulina Gomez Mont W"
+author:
+- \textbf{Equipo1}
+- Paulina Gómez-Mont Wiechers \texttt{113018}
+- Rodrigo Floriano Verástegui \texttt{111954}
+- Carlos Alberto García Michel \texttt{181987}
 date: "5/1/2019"
 output: html_document
 ---
